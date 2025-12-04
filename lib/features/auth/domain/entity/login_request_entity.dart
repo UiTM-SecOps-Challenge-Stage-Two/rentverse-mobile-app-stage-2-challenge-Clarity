@@ -1,5 +1,4 @@
-// lib/features/auth/domain/entity/req/register_request_enity.dart
-
+// lib/features/auth/domain/entity/login_request_entity.dart
 class LoginRequestEntity {
   final String email;
   final String password;
