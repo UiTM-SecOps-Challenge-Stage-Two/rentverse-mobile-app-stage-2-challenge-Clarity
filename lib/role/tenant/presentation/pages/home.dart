@@ -123,10 +123,6 @@ class TenantHomePage extends StatelessWidget {
                   SizedBox(height: 18),
                   CityCarousel(),
                   SizedBox(height: 6),
-                  Text(
-                    'Tenant Home Page',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
                 ],
               ),
             ),
