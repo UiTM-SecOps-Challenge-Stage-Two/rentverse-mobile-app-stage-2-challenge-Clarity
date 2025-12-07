@@ -21,6 +21,10 @@ import 'package:rentverse/features/bookings/data/repository/bookings_repository_
 import 'package:rentverse/features/bookings/data/source/booking_api_service.dart';
 import 'package:rentverse/features/bookings/domain/repository/bookings_repository.dart';
 import 'package:rentverse/features/bookings/domain/usecase/create_booking_usecase.dart';
+import 'package:rentverse/features/map/data/repository/map_repository_impl.dart';
+import 'package:rentverse/features/map/data/source/open_map_remote_data_source.dart';
+import 'package:rentverse/features/map/domain/repository/map_repository.dart';
+import 'package:rentverse/features/map/domain/usecase/reverse_geocode_usecase.dart';
 import 'package:rentverse/features/kyc/data/repository/kyc_repository_impl.dart';
 import 'package:rentverse/features/kyc/data/source/kyc_api_service.dart';
 import 'package:rentverse/features/kyc/domain/repository/kyc_repository.dart';
@@ -33,6 +37,7 @@ import 'package:rentverse/features/property/data/repository/property_repository_
 import 'package:rentverse/features/property/data/source/property_api_service.dart';
 import 'package:rentverse/features/property/domain/repository/property_repository.dart';
 import 'package:rentverse/features/property/domain/usecase/get_properties_usecase.dart';
+import 'package:rentverse/core/network/open_map_street_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final sl = GetIt.instance;
@@ -72,6 +77,15 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<BookingsRepository>(
     () => BookingsRepositoryImpl(sl<BookingApiService>()),
   );
+  // OpenStreetMap / Nominatim
+  sl.registerLazySingleton<OpenMapStreetApi>(() => OpenMapStreetApi());
+  sl.registerLazySingleton<OpenMapRemoteDataSource>(
+    () => OpenMapRemoteDataSourceImpl(sl<OpenMapStreetApi>()),
+  );
+  sl.registerLazySingleton<MapRepository>(
+    () => MapRepositoryImpl(sl<OpenMapRemoteDataSource>()),
+  );
+  sl.registerLazySingleton(() => ReverseGeocodeUseCase(sl<MapRepository>()));
   sl.registerLazySingleton<KycApiService>(
     () => KycApiServiceImpl(sl<DioClient>()),
   );

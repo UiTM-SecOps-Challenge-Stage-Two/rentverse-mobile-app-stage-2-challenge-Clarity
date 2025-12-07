@@ -1,6 +1,9 @@
 //lib/role/tenant/presentation/pages/property/detail_property.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:rentverse/common/colors/custom_color.dart';
 import 'package:rentverse/features/property/domain/entity/list_property_entity.dart';
 import 'package:rentverse/role/tenant/presentation/widget/detail_property/amenities_widget.dart';
 import 'package:rentverse/role/tenant/presentation/widget/detail_property/accessorise_widget.dart';
@@ -63,6 +66,16 @@ class DetailProperty extends StatelessWidget {
                       style: const TextStyle(fontSize: 13, height: 1.4),
                     ),
                     AmenitiesWidget(amenities: property.amenities),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Location',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _LocationMap(property: property),
                   ],
                 ),
               ),
@@ -97,4 +110,81 @@ String? _extractOwnerAvatar(PropertyEntity property) {
   final avatar = meta['landlordAvatar'] ?? meta['ownerAvatar'];
   if (avatar is String && avatar.trim().isNotEmpty) return avatar.trim();
   return null;
+}
+
+class _LocationMap extends StatelessWidget {
+  const _LocationMap({required this.property});
+
+  final PropertyEntity property;
+
+  @override
+  Widget build(BuildContext context) {
+    final lat = property.latitude;
+    final lon = property.longitude;
+
+    if (lat == null || lon == null) {
+      return const Text(
+        'Lokasi belum tersedia',
+        style: TextStyle(color: Colors.grey),
+      );
+    }
+
+    final center = LatLng(lat, lon);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.place, color: appSecondaryColor),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                '${property.city}, ${property.country}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 220,
+            width: double.infinity,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 14,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
+                  userAgentPackageName: 'com.example.rentverse',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: center,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_pin,
+                        size: 40,
+                        color: appSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
