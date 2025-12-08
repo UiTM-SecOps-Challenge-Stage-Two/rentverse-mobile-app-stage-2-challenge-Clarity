@@ -6,6 +6,7 @@ import 'package:rentverse/features/bookings/domain/usecase/get_bookings_usecase.
 import 'package:rentverse/features/bookings/domain/entity/res/booking_response_entity.dart';
 import 'package:rentverse/features/midtrans/domain/usecase/pay_invoice_usecase.dart';
 import 'package:rentverse/role/tenant/presentation/pages/rent/midtrans_payment_page.dart';
+import 'package:rentverse/role/tenant/presentation/pages/rent/detail_active_rent.dart';
 import 'package:rentverse/role/tenant/presentation/cubit/rent/cubit.dart';
 import 'package:rentverse/role/tenant/presentation/cubit/rent/state.dart';
 
@@ -32,6 +33,12 @@ class _TenantRentPageState extends State<TenantRentPage> {
       return a.property.title.compareTo(b.property.title);
     });
     return sorted;
+  }
+
+  void _openActiveDetail(BuildContext context, BookingListItemEntity item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ActiveRentDetailPage(booking: item)),
+    );
   }
 
   @override
@@ -108,25 +115,25 @@ class _TenantRentPageState extends State<TenantRentPage> {
                     statusLabel: 'Approved by the owner',
                     items: pending,
                     buttonLabel: 'Go to Payment',
-                    onPay: (item) => _handlePayment(context, item),
+                    onTap: (item) => _handlePayment(context, item),
                   ),
                   _BookingList(
                     statusLabel: 'Active Booking',
                     items: active,
                     buttonLabel: 'View Detail',
-                    onPay: (item) => _handlePayment(context, item),
+                    onTap: (item) => _openActiveDetail(context, item),
                   ),
                   _BookingList(
                     statusLabel: 'Completed',
                     items: completed,
                     buttonLabel: 'View Detail',
-                    onPay: (item) => _handlePayment(context, item),
+                    onTap: (item) => _openActiveDetail(context, item),
                   ),
                   _BookingList(
                     statusLabel: 'Cancelled',
                     items: cancelled,
                     buttonLabel: 'View Detail',
-                    onPay: (item) => _handlePayment(context, item),
+                    onTap: (item) => _openActiveDetail(context, item),
                   ),
                 ],
               );
@@ -143,13 +150,13 @@ class _BookingList extends StatelessWidget {
     required this.statusLabel,
     required this.items,
     required this.buttonLabel,
-    required this.onPay,
+    required this.onTap,
   });
 
   final String statusLabel;
   final List<BookingListItemEntity> items;
   final String buttonLabel;
-  final void Function(BookingListItemEntity) onPay;
+  final void Function(BookingListItemEntity) onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +170,7 @@ class _BookingList extends StatelessWidget {
           city: item.property.city,
           imageUrl: item.property.image,
           buttonLabel: buttonLabel,
-          onTap: () => onPay(item),
+          onTap: () => onTap(item),
         );
       },
       separatorBuilder: (_, __) => const SizedBox(height: 12),
