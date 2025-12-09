@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:rentverse/common/utils/network_utils.dart';
 import 'package:rentverse/features/property/domain/entity/list_property_by_owner.dart';
 
 class PropertyCard extends StatelessWidget {
@@ -129,10 +130,11 @@ class PropertyImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
+      final src = makeDeviceAccessibleUrl(imageUrl!);
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          imageUrl!,
+          src ?? imageUrl!,
           width: 110,
           height: 80,
           fit: BoxFit.cover,

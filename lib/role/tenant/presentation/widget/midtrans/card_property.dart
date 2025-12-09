@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rentverse/common/utils/network_utils.dart';
 import 'package:rentverse/features/bookings/domain/entity/res/booking_response_entity.dart';
 
 class CardProperty extends StatelessWidget {
@@ -16,6 +17,10 @@ class CardProperty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = property;
+    final img = p?.imageUrl;
+    final resolvedImg = img != null
+        ? makeDeviceAccessibleUrl(img) ?? img
+        : null;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -34,11 +39,21 @@ class CardProperty extends StatelessWidget {
             child: SizedBox(
               width: 90,
               height: 90,
-              child: p?.imageUrl != null && p!.imageUrl.isNotEmpty
+              child: resolvedImg != null && resolvedImg.isNotEmpty
                   ? Image.network(
-                      p.imageUrl,
+                      resolvedImg,
+                      width: 120,
+                      height: 88,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
+                      errorBuilder: (c, e, s) => Container(
+                        width: 120,
+                        height: 88,
+                        color: Colors.grey.shade200,
+                        child: const Icon(
+                          Icons.broken_image,
+                          color: Colors.grey,
+                        ),
+                      ),
                     )
                   : _placeholder(),
             ),
