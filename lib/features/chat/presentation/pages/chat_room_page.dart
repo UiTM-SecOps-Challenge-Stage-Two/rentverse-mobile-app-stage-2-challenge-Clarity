@@ -98,13 +98,25 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           );
                         }
 
+                        final items = _buildChatItems(messages);
+
                         return ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.all(12),
-                          itemCount: messages.length,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          itemCount: items.length,
                           itemBuilder: (context, index) {
-                            final message = messages[index];
-                            return _MessageBubble(message: message);
+                            final item = items[index];
+                            if (item.isHeader) {
+                              return _DateHeader(date: item.headerDate!);
+                            }
+                            return _MessageBubble(
+                              message: item.message!,
+                              otherUserAvatar: widget.otherUserAvatar,
+                              otherUserName: widget.otherUserName,
+                            );
                           },
                         );
                       },
@@ -128,53 +140,171 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message});
+  const _MessageBubble({
+    required this.message,
+    this.otherUserAvatar,
+    required this.otherUserName,
+  });
 
   final ChatMessageEntity message;
+  final String? otherUserAvatar;
+  final String otherUserName;
 
   @override
   Widget build(BuildContext context) {
     final isMe = message.isMe;
     final timeLabel = DateFormat('HH:mm').format(message.createdAt);
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(12),
-        constraints: const BoxConstraints(maxWidth: 260),
-        decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF1CD8D2) : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12).copyWith(
-            bottomRight: Radius.circular(isMe ? 0 : 12),
-            bottomLeft: Radius.circular(isMe ? 12 : 0),
+    final bubbleColor = isMe
+        ? Colors.white
+        : const Color(0xFFE8F5FF); // soft blue for other
+    final textColor = Colors.black87;
+    final radius = BorderRadius.circular(16);
+
+    Widget avatar({required bool show}) {
+      if (!show) return const SizedBox(width: 32);
+      final image = otherUserAvatar;
+      if (image != null && image.isNotEmpty) {
+        return CircleAvatar(radius: 16, backgroundImage: NetworkImage(image));
+      }
+      final initial = otherUserName.isNotEmpty
+          ? otherUserName[0].toUpperCase()
+          : '?';
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey.shade300,
+        child: Text(initial, style: const TextStyle(color: Colors.black87)),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          if (!isMe) avatar(show: true),
+          if (!isMe) const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: bubbleColor,
+                borderRadius: isMe
+                    ? radius.copyWith(topRight: Radius.circular(0))
+                    : radius.copyWith(topLeft: Radius.circular(0)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.content,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    timeLabel,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: isMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
-                fontSize: 14,
-              ),
+          if (isMe) const SizedBox(width: 8),
+          if (isMe)
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: const Color(0xFF1CD8D2),
+              child: const Icon(Icons.person, size: 16, color: Colors.white),
             ),
-            const SizedBox(height: 4),
-            Text(
-              timeLabel,
-              style: TextStyle(
-                color: isMe ? Colors.white70 : Colors.black45,
-                fontSize: 11,
-              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DateHeader extends StatelessWidget {
+  const _DateHeader({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isToday =
+        now.year == date.year && now.month == date.month && now.day == date.day;
+    final label = isToday ? 'Today' : DateFormat('dd MMM yyyy').format(date);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _ChatListItem {
+  final ChatMessageEntity? message;
+  final DateTime? headerDate;
+  final bool isHeader;
+
+  _ChatListItem.header(this.headerDate) : message = null, isHeader = true;
+
+  _ChatListItem.message(this.message) : headerDate = null, isHeader = false;
+}
+
+List<_ChatListItem> _buildChatItems(List<ChatMessageEntity> messages) {
+  if (messages.isEmpty) return [];
+  final sorted = List<ChatMessageEntity>.from(messages)
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+  final items = <_ChatListItem>[];
+  DateTime? currentDay;
+
+  for (final msg in sorted) {
+    final day = DateTime(
+      msg.createdAt.year,
+      msg.createdAt.month,
+      msg.createdAt.day,
+    );
+    if (currentDay == null || day.isAfter(currentDay)) {
+      currentDay = day;
+      items.add(_ChatListItem.header(day));
+    }
+    items.add(_ChatListItem.message(msg));
+  }
+
+  return items;
 }
 
 class _ChatInput extends StatelessWidget {
