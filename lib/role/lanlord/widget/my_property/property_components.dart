@@ -10,10 +10,12 @@ class PropertyCard extends StatelessWidget {
     super.key,
     required this.item,
     this.showStatusBadge = true,
+    this.statusBadge,
   });
 
   final OwnerPropertyEntity item;
   final bool showStatusBadge;
+  final Widget? statusBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +75,10 @@ class PropertyCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                StatusPill(isVerified: item.isVerified),
+                if (statusBadge != null)
+                  statusBadge!
+                else if (showStatusBadge)
+                  StatusPill(isVerified: item.isVerified),
                 const Spacer(),
                 if (item.createdAt != null)
                   Text(
