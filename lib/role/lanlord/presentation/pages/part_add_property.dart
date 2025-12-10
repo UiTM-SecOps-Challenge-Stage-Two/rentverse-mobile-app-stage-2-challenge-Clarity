@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rentverse/core/services/service_locator.dart';
+import 'package:rentverse/common/colors/custom_color.dart';
 import 'package:rentverse/features/property/domain/usecase/create_property_usecase.dart';
 import 'package:rentverse/role/lanlord/presentation/cubit/add_property_cubit.dart';
 import 'package:rentverse/role/lanlord/presentation/cubit/add_property_state.dart';
@@ -121,14 +122,12 @@ class _StepCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: completed
-                ? const Color(0xFF1CD8D2)
-                : const Color(0xFFE0E0E0),
+            color: completed ? appPrimaryColor : const Color(0xFFE0E0E0),
           ),
           boxShadow: [
             BoxShadow(
@@ -150,8 +149,7 @@ class _StepCard extends StatelessWidget {
                 ),
               ),
             ),
-            if (completed)
-              const Icon(Icons.check_circle, color: Color(0xFF1CD8D2)),
+            if (completed) Icon(Icons.check_circle, color: appPrimaryColor),
           ],
         ),
       ),
