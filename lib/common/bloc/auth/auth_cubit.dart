@@ -5,6 +5,8 @@ import 'package:rentverse/common/bloc/auth/auth_state.dart';
 import 'package:rentverse/core/services/service_locator.dart';
 import 'package:rentverse/features/auth/domain/usecase/get_local_user_usecase.dart';
 import 'package:rentverse/features/auth/domain/usecase/is_logged_in_usecase.dart';
+import 'package:rentverse/features/auth/domain/usecase/get_user_usecase.dart';
+import 'package:rentverse/core/resources/data_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
   AuthCubit() : super(AppInitialState());
@@ -13,12 +15,20 @@ class AuthCubit extends Cubit<AuthState> {
       final bool hasToken = await sl<IsLoggedInUsecase>().call();
 
       if (hasToken) {
-        final user = await sl<GetLocalUserUseCase>().call();
+        // First load local cached user to show something quickly
+        final local = await sl<GetLocalUserUseCase>().call();
+        if (local != null) {
+          emit(Authenticated(user: local));
+        }
 
-        if (user != null) {
-          emit(Authenticated(user: user)); 
-        } else {
-          emit(UnAuthenticated());
+        // Then fetch fresh profile from server (/auth/me) and update state
+        try {
+          final result = await sl<GetUserUseCase>().call();
+          if (result is DataSuccess && result.data != null) {
+            emit(Authenticated(user: result.data!));
+          }
+        } catch (_) {
+          // ignore network errors but keep local user if present
         }
       } else {
         emit(UnAuthenticated());

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rentverse/core/services/service_locator.dart';
+import 'package:rentverse/common/bloc/auth/auth_cubit.dart';
+import 'package:rentverse/common/bloc/auth/auth_state.dart';
 import 'package:rentverse/features/bookings/domain/entity/res/booking_list_entity.dart';
 import 'package:rentverse/features/bookings/domain/usecase/get_bookings_usecase.dart';
 import 'package:rentverse/features/bookings/domain/entity/res/booking_response_entity.dart';
@@ -43,6 +45,23 @@ class _TenantRentPageState extends State<TenantRentPage> {
 
   @override
   Widget build(BuildContext context) {
+    // If user is tenant and KYC not VERIFIED, show waiting message
+    final authState = context.watch<AuthCubit>().state;
+    if (authState is Authenticated && authState.user.isTenant) {
+      final kyc = authState.user.tenantProfile?.kycStatus ?? '';
+      if (kyc.toUpperCase() != 'VERIFIED') {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Booking'),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            centerTitle: true,
+          ),
+          body: const Center(child: Text('Menunggu terverifikasi')),
+        );
+      }
+    }
     return DefaultTabController(
       length: 7,
       child: BlocProvider(

@@ -125,14 +125,30 @@ class DetailProperty extends StatelessWidget {
                     const Center(child: CircularProgressIndicator()),
                 ],
               ),
-              bottomNavigationBar: BookingButton(
-                price: currentProperty.price,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          BookingPropertyPage(property: currentProperty),
-                    ),
+              bottomNavigationBar: BlocBuilder<AuthCubit, AuthState>(
+                builder: (context, authState) {
+                  bool canBook = false;
+                  if (authState is Authenticated) {
+                    final user = authState.user;
+                    if (user.isTenant) {
+                      final kyc = user.tenantProfile?.kycStatus ?? '';
+                      canBook = kyc.toUpperCase() == 'VERIFIED';
+                    }
+                  }
+
+                  return BookingButton(
+                    price: currentProperty.price,
+                    onTap: canBook
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => BookingPropertyPage(
+                                  property: currentProperty,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
                   );
                 },
               ),

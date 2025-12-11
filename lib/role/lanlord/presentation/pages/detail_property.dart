@@ -150,18 +150,41 @@ class DetailProperty extends StatelessWidget {
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        BookingButton(
-                          price: currentProperty.price,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => BookingPropertyPage(
-                                  property: currentProperty,
-                                ),
-                              ),
+                        BlocBuilder<AuthCubit, AuthState>(
+                          builder: (context, authState) {
+                            // Default: disable booking for non-authenticated users
+                            bool canBook = false;
+                            if (authState is Authenticated) {
+                              final user = authState.user;
+                              // If tenant role exists, check tenantProfile KYC
+                              if (user.isTenant) {
+                                final kyc = user.tenantProfile?.kycStatus;
+                                canBook =
+                                    kyc != null &&
+                                    kyc.toUpperCase() == 'VERIFIED';
+                              } else {
+                                // Non-tenant (landlord/admin) — allow booking disabled
+                                canBook = false;
+                              }
+                            }
+
+                            return BookingButton(
+                              price: currentProperty.price,
+                              onTap: canBook
+                                  ? () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => BookingPropertyPage(
+                                            property: currentProperty,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              onChat: () =>
+                                  _startChat(context, currentProperty),
                             );
                           },
-                          onChat: () => _startChat(context, currentProperty),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(

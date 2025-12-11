@@ -117,6 +117,27 @@ class _BookingGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (onTap == null) {
+      // Disabled appearance: gray background and muted text
+      return Container(
+        width: double.infinity,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'Booking',
+          style: TextStyle(
+            color: Colors.grey.shade700,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       height: 50,
