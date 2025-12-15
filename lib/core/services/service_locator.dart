@@ -199,7 +199,11 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<WalletRepository>(
     () => WalletRepositoryImpl(sl<WalletApiService>()),
   );
-  sl.registerLazySingleton(() => RequestPayoutUseCase(sl<WalletRepository>()));
+  if (!sl.isRegistered<RequestPayoutUseCase>()) {
+    sl.registerLazySingleton(
+      () => RequestPayoutUseCase(sl<WalletRepository>()),
+    );
+  }
   sl.registerLazySingleton<MidtransApiService>(
     () => MidtransApiServiceImpl(sl<DioClient>()),
   );
@@ -255,7 +259,6 @@ Future<void> setupServiceLocator() async {
     () => GetRentReferencesUseCase(sl<RentalRepository>()),
   );
   sl.registerLazySingleton(() => GetWalletUseCase(sl<WalletRepository>()));
-  sl.registerLazySingleton(() => RequestPayoutUseCase(sl<WalletRepository>()));
   sl.registerLazySingleton(() => PayInvoiceUseCase(sl<MidtransRepository>()));
 
   sl.registerLazySingleton(() => GetBookingsUseCase(sl<BookingsRepository>()));
