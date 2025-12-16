@@ -52,7 +52,7 @@ class _OpenMapScreenState extends State<OpenMapScreen> {
     return BlocProvider.value(
       value: _reverseCubit,
       child: Scaffold(
-        appBar: AppBar(title: const Text('OpenStreetMap Preview')),
+        appBar: AppBar(title: const Text('Pick Location')),
         body: Column(
           children: [
             Expanded(
@@ -62,8 +62,11 @@ class _OpenMapScreenState extends State<OpenMapScreen> {
                     mapController: _mapController,
                     options: MapOptions(
                       initialCenter: _center,
-                      initialZoom: 14,
-                      // also update center quickly for smoother marker
+                      initialZoom: 15,
+                      onTap: (_, point) {
+                        _mapController.move(point, _mapController.camera.zoom);
+                        // onPositionChanged will trigger and update _center & fetch address
+                      },
                       onPositionChanged: (pos, hasGesture) {
                         final newCenter = pos.center;
                         setState(() => _center = newCenter);
@@ -80,7 +83,7 @@ class _OpenMapScreenState extends State<OpenMapScreen> {
                             },
                           );
                         } else {
-                          // immediate fetch when movement ends
+                          // immediate fetch when movement ends/tap move
                           _reverseCubit.fetch(
                             _center.latitude,
                             _center.longitude,
@@ -99,27 +102,24 @@ class _OpenMapScreenState extends State<OpenMapScreen> {
                         markers: [
                           Marker(
                             point: _center,
-                            width: 44,
-                            height: 44,
+                            width: 48,
+                            height: 48,
                             child: const Icon(
-                              Icons.location_pin,
-                              size: 44,
-                              color: appSecondaryColor,
+                              Icons.location_on,
+                              size: 48,
+                              color: Colors.redAccent,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                )
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ],
-                  ),
-                  // center crosshair overlay so user knows exact selected point
-                  IgnorePointer(
-                    child: Center(
-                      child: Icon(
-                        Icons.add_location_alt,
-                        size: 36,
-                        color: Colors.black26,
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -129,62 +129,100 @@ class _OpenMapScreenState extends State<OpenMapScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
               ),
               child: BlocBuilder<ReverseGeocodeCubit, ReverseGeocodeState>(
                 builder: (context, state) {
                   if (state.status == ReverseGeocodeStatus.loading) {
-                    return const Row(
-                      children: [
-                        SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 10),
-                        Text('Memuat alamat...'),
-                      ],
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Loading address...'),
+                        ],
+                      ),
                     );
                   }
-                  if (state.status == ReverseGeocodeStatus.failure) {
-                    return Text(
-                      state.error ?? 'Gagal memuat alamat',
-                      style: const TextStyle(color: Colors.red),
-                    );
-                  }
+                  
                   final location = state.location;
-                  if (location == null) {
-                    return const Text('Sentuh peta untuk mendapatkan alamat');
-                  }
+                  final displayName = location?.displayName ?? 'Tap map to select';
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        location.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      const Text(
+                        'Selected Location',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
-                        'Lat: ${location.lat.toStringAsFixed(5)}, Lon: ${location.lon.toStringAsFixed(5)}',
-                        style: const TextStyle(color: Colors.grey),
+                        displayName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
+                      if (location != null) ...[
+                         const SizedBox(height: 4),
+                         Text(
+                          '${location.lat.toStringAsFixed(5)}, ${location.lon.toStringAsFixed(5)}',
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Container(
                         width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop({
-                              'lat': location.lat,
-                              'lon': location.lon,
-                              'displayName': location.displayName,
-                              'city': location.city,
-                              'country': location.country,
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1CD8D2),
+                        height: 50,
+                        decoration: BoxDecoration(
+                          gradient: customLinearGradient,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: location != null ? () {
+                              Navigator.of(context).pop({
+                                'lat': location.lat,
+                                'lon': location.lon,
+                                'displayName': location.displayName,
+                                'city': location.city,
+                                'country': location.country,
+                              });
+                            } : null,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Center(
+                              child: Text(
+                                'Select Location',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(
+                                      location != null ? 1.0 : 0.7),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
                           ),
-                          child: const Text('Select this location'),
                         ),
                       ),
                     ],
