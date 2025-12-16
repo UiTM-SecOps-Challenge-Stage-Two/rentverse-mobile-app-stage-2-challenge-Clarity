@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rentverse/role/lanlord/presentation/cubit/add_property_cubit.dart';
 import 'package:rentverse/role/lanlord/presentation/cubit/add_property_state.dart';
+import 'package:rentverse/common/colors/custom_color.dart';
 
 class PricingAndAmenityPropertyPage extends StatefulWidget {
   const PricingAndAmenityPropertyPage({super.key});
@@ -219,7 +220,7 @@ class _PricingAndAmenityPropertyPageState
                       child: ElevatedButton(
                         onPressed: _save,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1CD8D2),
+                          backgroundColor: appPrimaryColor,
                         ),
                         child: const Text('Save'),
                       ),
@@ -350,7 +351,7 @@ class _TagEditorState extends State<_TagEditor> {
             ElevatedButton(
               onPressed: _addFromInput,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1CD8D2),
+                backgroundColor: appPrimaryColor,
                 minimumSize: const Size(60, 44),
               ),
               child: const Text('Add'),

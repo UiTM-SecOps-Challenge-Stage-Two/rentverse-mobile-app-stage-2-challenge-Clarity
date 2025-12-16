@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:rentverse/common/colors/custom_color.dart';
+
 import 'package:rentverse/core/services/service_locator.dart';
 import 'package:rentverse/core/utils/error_utils.dart';
 import 'package:rentverse/features/auth/domain/usecase/send_otp_usecase.dart';
@@ -23,8 +23,28 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool _isLoading = false;
   bool _isSending = false;
+
+  bool get _isEmail => widget.channel.toUpperCase() == 'EMAIL';
+
+  @override
+  void initState() {
+    super.initState();
+    // Send OTP immediately when opening
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _sendOtp();
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   Future<void> _sendOtp() async {
     setState(() => _isSending = true);
@@ -36,24 +56,32 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       final result = await usecase.call(param: params);
       if (result is DataSuccess<bool>) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('OTP sent successfully')));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('OTP sent successfully')),
+          );
+        }
       } else if (result is DataFailed) {
-        final msg = resolveApiErrorMessage(
-          result.error,
-          fallback: 'Failed to send OTP',
-        );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
+        if (mounted) {
+          final msg = resolveApiErrorMessage(
+            result.error,
+            fallback: 'Failed to send OTP',
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to send OTP: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send OTP: $e')),
+        );
+      }
     } finally {
-      setState(() => _isSending = false);
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
     }
   }
 
@@ -68,130 +96,287 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _isLoading = true);
     final usecase = sl<VerifyOtpUseCase>();
-    final params = VerifyOtpParams(
+    final verifyParams = VerifyOtpParams(
       target: widget.target,
       channel: widget.channel,
       code: code,
     );
     try {
-      final result = await usecase.call(param: params);
+      final result = await usecase.call(param: verifyParams);
       if (result is DataSuccess<bool>) {
-        final updated = result.data == true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(updated ? 'Verification successful' : 'OTP verified'),
-          ),
-        );
-        Navigator.of(context).pop(true);
+        if (mounted) {
+          final updated = result.data == true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  updated ? 'Verification successful' : 'OTP verified'),
+            ),
+          );
+          Navigator.of(context).pop(true);
+        }
       } else if (result is DataFailed) {
-        final msg = resolveApiErrorMessage(
-          result.error,
-          fallback: 'Verification failed',
-        );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(msg)));
+        if (mounted) {
+          final msg = resolveApiErrorMessage(
+            result.error,
+            fallback: 'Verification failed',
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg)),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Verification error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification error: $e')),
+        );
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Send OTP immediately when opening
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sendOtp());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('OTP Verification'),
-        backgroundColor: appPrimaryColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          _isEmail ? 'Email Verification' : 'Verify Phone Number',
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: false,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 8),
-              Text(
-                widget.channel.toUpperCase() == 'EMAIL'
-                    ? 'Email Verification'
-                    : 'Phone Verification',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(height: 40),
+              
+              // Icon Section
+              if (_isEmail) ...[
+                const Text(
+                  'Email Verification',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black12,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'We have sent a 6 digit code to ${widget.target}.',
-                style: const TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _controller,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(6),
-                ],
-                decoration: const InputDecoration(
-                  hintText: 'Enter 6-digit code',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 30),
+                // Emulating the Gmail logo with an Icon for now as assets are missing
+                // In a real app with provided assets, we'd use Image.asset
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: const Icon(
+                    Icons.mail_outline_rounded,
+                    size: 80,
+                    color: Colors.redAccent,
+                  ),
                 ),
-                style: const TextStyle(letterSpacing: 8, fontSize: 22),
+              ] else ...[
+                 const Text(
+                  'Phone Number Verification',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black12,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                const Icon(
+                  Icons.phone_android_rounded,
+                  size: 80,
+                  color: Color(0xFF1E232C), // Dark color from design
+                ),
+              ],
+
+              const SizedBox(height: 30),
+
+              // Description Text
+              RichText(
                 textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _verifyOtp,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: appPrimaryColor,
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF6A707C),
+                    height: 1.5,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: _isEmail
+                          ? 'We have sent an OTP code to your email address '
+                          : 'We have sent an OTP code to number ',
+                    ),
+                    TextSpan(
+                      text: widget.target,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text('Verify'),
+                    ),
+                    TextSpan(
+                      text: _isEmail
+                          ? ''
+                          : ', please check your SMS.',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Custom Pin Input
+              _buildPinCodeInput(),
+
+              const SizedBox(height: 20),
+
+              // Resend Option
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Didn't receive the OTP code? ",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isSending ? null : _sendOtp,
+                    child: Text(
+                      _isSending ? "Resending..." : "Resend",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00CED1), // Cyan like color
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: _isSending ? null : _sendOtp,
-                    child: _isSending
-                        ? const Text('Resending...')
-                        : const Text('Resend Code'),
+
+              const Spacer(),
+
+              // Verify Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _verifyOtp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00CED1), // Cyan color
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
                   ),
-                ],
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Get In',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
               ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPinCodeInput() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Hidden TextField for input handling
+        SizedBox(
+          height: 50,
+          child: Opacity(
+            opacity: 0.0,
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
+              ],
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+        ),
+        // Visible Boxes
+        GestureDetector(
+          onTap: () {
+            _focusNode.requestFocus();
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (index) {
+              final code = _controller.text;
+              final isFilled = index < code.length;
+              final digit = isFilled ? code[index] : '';
+              final isFocused = index == code.length && _focusNode.hasFocus;
+
+              return Container(
+                width: 45,
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isFocused
+                        ? const Color(0xFF00CED1)
+                        : const Color(0xFFE8ECF4),
+                    width: 1.5,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Text(
+                  digit,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+      ],
     );
   }
 }

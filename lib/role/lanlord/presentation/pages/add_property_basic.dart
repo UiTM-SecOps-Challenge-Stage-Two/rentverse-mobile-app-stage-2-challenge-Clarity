@@ -5,6 +5,7 @@ import 'package:rentverse/role/lanlord/presentation/cubit/add_property_cubit.dar
 import 'package:rentverse/role/lanlord/presentation/cubit/add_property_state.dart';
 import 'package:rentverse/role/lanlord/widget/add_property/map_handling.dart';
 import 'package:rentverse/features/map/presentation/screen/open_map_screen.dart';
+import 'package:rentverse/common/colors/custom_color.dart';
 
 class AddPropertyBasicPage extends StatefulWidget {
   const AddPropertyBasicPage({super.key});
@@ -235,22 +236,30 @@ class _AddPropertyBasicPageState extends State<AddPropertyBasicPage> {
                   onChanged: (_) => _onChange(),
                 ),
                 const SizedBox(height: 12),
-                _NumberStepper(
-                  label: 'How many bedrooms?',
-                  value: _bedrooms,
-                  onChanged: (v) {
-                    setState(() => _bedrooms = v);
-                    _onChange();
-                  },
-                ),
-                const SizedBox(height: 12),
-                _NumberStepper(
-                  label: 'How many bathrooms?',
-                  value: _bathrooms,
-                  onChanged: (v) {
-                    setState(() => _bathrooms = v);
-                    _onChange();
-                  },
+                Row(
+                  children: [
+                    Expanded(
+                      child: _NumberStepper(
+                        label: 'Bedrooms',
+                        value: _bedrooms,
+                        onChanged: (v) {
+                          setState(() => _bedrooms = v);
+                          _onChange();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _NumberStepper(
+                        label: 'Bathrooms',
+                        value: _bathrooms,
+                        onChanged: (v) {
+                          setState(() => _bathrooms = v);
+                          _onChange();
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 _ImagePickerRow(images: _images, onPick: _pickImages),
@@ -268,7 +277,7 @@ class _AddPropertyBasicPageState extends State<AddPropertyBasicPage> {
                       child: ElevatedButton(
                         onPressed: _save,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1CD8D2),
+                          backgroundColor: appPrimaryColor,
                         ),
                         child: const Text('Save'),
                       ),
@@ -381,6 +390,14 @@ class _LabeledField extends StatelessWidget {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: appSecondaryColor.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: appSecondaryColor, width: 2),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
@@ -429,6 +446,14 @@ class _DropdownField extends StatelessWidget {
             if (val != null) onChanged(val);
           },
           decoration: InputDecoration(
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: appSecondaryColor.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: appSecondaryColor, width: 2),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
@@ -459,21 +484,69 @@ class _NumberStepper extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
         Row(
           children: [
-            IconButton(
-              onPressed: value > 0 ? () => onChanged(value - 1) : null,
-              icon: const Icon(Icons.remove_circle_outline),
+            _StepperButton(
+              icon: Icons.remove,
+              onTap: value > 0 ? () => onChanged(value - 1) : null,
             ),
-            Text('$value', style: const TextStyle(fontWeight: FontWeight.w700)),
-            IconButton(
-              onPressed: () => onChanged(value + 1),
-              icon: const Icon(Icons.add_circle_outline),
+            Container(
+              alignment: Alignment.center,
+              width: 50,
+              child: Text(
+                '$value',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            _StepperButton(
+              icon: Icons.add,
+              onTap: () => onChanged(value + 1),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onTap != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isEnabled ? appSecondaryColor : Colors.grey.shade300,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: isEnabled ? Colors.white : Colors.grey.shade100,
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isEnabled ? appSecondaryColor : Colors.grey.shade400,
+          ),
+        ),
+      ),
     );
   }
 }

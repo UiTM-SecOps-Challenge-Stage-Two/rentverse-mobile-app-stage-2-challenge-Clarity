@@ -170,7 +170,7 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? const Color(0xFF1CD8D2) : const Color(0xFFB8B8B8);
+    final color = enabled ? appPrimaryColor : const Color(0xFFB8B8B8);
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
